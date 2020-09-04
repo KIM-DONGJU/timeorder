@@ -1,0 +1,43 @@
+<div id="app">
+    <div id="staticmap" style="width:600px;height:350px;">출력</div>
+  </div>
+</template>
+
+<script>
+export default {
+    mounted() {
+        if (window.kakao && window.kakao.maps) {
+            this.initMap();
+        } else {
+            const script = document.createElement('script');
+            /* global kakao */
+            script.onload = () => kakao.maps.load(this.initMap);
+            script.src = 'http://dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey=8e4f2ed8c34d2a508b7f69836430e41d';
+            document.head.appendChild(script);
+        }
+    },
+    methods: {
+        initMap() {
+            var markerPosition  = new kakao.maps.LatLng(33.450701, 126.570667); 
+            var marker = {
+              position: markerPosition
+            };
+            var staticMapContainer = document.getElementById('staticmap'),
+              staticMapOption = {
+                center: new kakao.maps.LatLng(33.450701, 126.570667),
+                level: 3,
+                marker: marker
+              };
+
+            this.staticMap = new kakao.maps.StaticMap(staticMapContainer, staticMapOption);
+        }
+    }
+}
+</script>
+
+<style>
+#map {
+    width: 1000px;
+    height: 1000px;
+}
+</style>

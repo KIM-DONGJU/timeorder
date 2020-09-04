@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import kr.pe.timeorder.exception.InvalidException;
+import kr.pe.timeorder.exception.NotFoundException;
+import kr.pe.timeorder.exception.PermissionException;
+import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Item;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Store;
@@ -43,28 +47,42 @@ public class ItemController {
 	
 	@GetMapping("/items/{storeId}")
 	public List<Item> storeItems(@PathVariable long storeId) {
+		log.info("---- storeItems (id) -----------------");
 		return iRepository.findItemByStore(sRepository.findById(storeId).get());
 	}
 	
-	@GetMapping("/items/{itemName}")
+	@GetMapping("/items/name/{itemName}")
 	public List<Item> storeItems(@PathVariable String itemName) {
+		log.info("---- storeItems (name) -----------------");
 		return iRepository.findItemByItemNameContaining(itemName);
 	}
 
 	@PostMapping("/items/{storeId}")
 	public ResponseEntity<Item> newItem(HttpServletRequest req, @RequestBody Item newItem, @PathVariable long storeId) {
+		log.info("---- newItem () -----------------");
 		HttpStatus status = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			Store store = sRepository.findById(storeId).get();
 			
 			if (loginMember.getAuthor() != 1 || store.getMember().getMemberId() != loginMember.getMemberId()) {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 			
 			newItem.setStore(store);
+
+			if (!newItem.isVaild()) {
+				throw new InvalidException();
+			}
+
 			iRepository.save(newItem);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
@@ -81,22 +99,29 @@ public class ItemController {
 
 	@DeleteMapping("/items/{itemId}")
 	public ResponseEntity<Item> deleteItem(HttpServletRequest req, @PathVariable long itemId) {
-		log.info("---- updateEmployees () -----------------");
+		log.info("---- deleteItem () -----------------");
 		HttpStatus status = null;
 		Member loginMember = null;
 		Item item = null;
 		
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			item = iRepository.findById(itemId).get();
 			Store store = item.getStore();
+			
 			if (loginMember.getAuthor() > 0 || loginMember.getMemberId() == store.getMember().getMemberId()) {
 				iRepository.deleteById(itemId);
 				status = HttpStatus.ACCEPTED;
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);

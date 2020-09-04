@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import kr.pe.timeorder.exception.InvalidException;
+import kr.pe.timeorder.exception.NotFoundException;
+import kr.pe.timeorder.exception.PermissionException;
+import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Review;
 import kr.pe.timeorder.model.Store;
@@ -39,25 +43,40 @@ public class ReviewController {
 	private JwtService jwtService;
 
 	@GetMapping("/reviews")
-	public List<Review> all() {
+	public List<Review> allReviews() {
+		log.info("---- allReviews () -----------------");
 		return rRepository.findAll();
 	}
 	
 	@GetMapping("/reviews/{storeId}")
 	public List<Review> storeReviews(@PathVariable long storeId) {
+		log.info("---- storeReviews () -----------------");
 		return rRepository.findReviewByStore(sRepository.findById(storeId).get());
 	}
 	
 	@PostMapping("/reviews/{storeId}")
 	public ResponseEntity<Review> newReview(HttpServletRequest req, @RequestBody Review newReview, @PathVariable long storeId) {
+		log.info("---- newReview () -----------------");
 		HttpStatus status = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
+			
 			
 			newReview.setStore(sRepository.findById(storeId).get());
 			newReview.setMember(loginMember);
+			
+			if (!newReview.isVaild()) {
+				throw new InvalidException();
+			}
+			
 			rRepository.save(newReview);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
@@ -68,28 +87,36 @@ public class ReviewController {
 	}
 
 	@GetMapping("/reviews/{reviewId}")
-	public Review one(@PathVariable long reviewId) {
+	public Review oneReview(@PathVariable long reviewId) {
+		log.info("---- oneReview () -----------------");
 		return rRepository.findById(reviewId).get();
 	}
 
 	@PutMapping("/reviews/{reviewId}")
 	public ResponseEntity<Review> replaceReview(HttpServletRequest req, @RequestBody Review newReview, @PathVariable long reviewId) {
+		log.info("---- replaceReview () -----------------");
 		HttpStatus status = null;
 		Review review = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			review = rRepository.findById(reviewId).get();
 			
 			if (loginMember.getMemberId() != review.getMember().getMemberId()) {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 			review.setContents(newReview.getContents());
 			review.setMember(newReview.getMember());
 			review.setScore(newReview.getScore());
 			review.setStore(newReview.getStore());
-			review.setWriteday(new Date());
+			review.setWriteday();
 			rRepository.save(review);
 			status = HttpStatus.ACCEPTED;
 			
@@ -102,18 +129,25 @@ public class ReviewController {
 
 	@DeleteMapping("/reviews/{reviewId}")
 	public ResponseEntity<Review> deleteReview(HttpServletRequest req, @PathVariable long reviewId) {
+		log.info("---- deleteReview () -----------------");
 		HttpStatus status = null;
 		Review review = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			review = rRepository.findById(reviewId).get();
 			
 			if (loginMember.getAuthor() == 2 || loginMember.getMemberId() == review.getMember().getMemberId()) {
 				rRepository.deleteById(reviewId);
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {

@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import kr.pe.timeorder.exception.InvalidException;
+import kr.pe.timeorder.exception.NotFoundException;
+import kr.pe.timeorder.exception.PermissionException;
+import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Store;
 import kr.pe.timeorder.repository.MemberRepository;
@@ -41,15 +45,22 @@ public class StoreController {
 		HttpStatus status = null;
 		List<Store> list = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
-			if (loginMember.getAuthor() != 2) {
-				throw new RuntimeException();
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
 			}
-			System.out.println(loginMember);
-			status = HttpStatus.ACCEPTED;
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
+			
+			if (loginMember.getAuthor() != 2) {
+				throw new PermissionException();
+			}
+			
 			list = sRepository.findAll();
+			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -62,20 +73,22 @@ public class StoreController {
 		HttpStatus status = null;
 		List<Store> list = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			Member findMember = mRepository.findById(loginMemberId).get();
 			
-			if (findMember.getAuthor() != 1) {
-				throw new RuntimeException();
-			}
-			
-			if (loginMember.getAuthor() == 2 || loginMember.getMemberId() == loginMemberId) {
-				status = HttpStatus.ACCEPTED;
+			if (loginMember.getAuthor() > 0 || loginMember.getMemberId() == loginMemberId) {
 				list = sRepository.findStoreByMember(findMember);
+				status = HttpStatus.ACCEPTED;
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
@@ -88,17 +101,28 @@ public class StoreController {
 	public ResponseEntity<Store> newStore(HttpServletRequest req, @RequestBody Store newStore) {
 		HttpStatus status = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("mission"));
 			
 			if (loginMember.getAuthor() != 1) {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 			
-			status = HttpStatus.ACCEPTED;
 			newStore.setMember(loginMember);
+
+			if (!newStore.isVaild()) {
+				throw new InvalidException();
+			}
+			
 			sRepository.save(newStore);
+			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -114,24 +138,29 @@ public class StoreController {
 	@PutMapping("/stores/{storeId}")
 	public ResponseEntity<Store> replaceStore(HttpServletRequest req ,@RequestBody Store newStore, @PathVariable long storeId) {
 		HttpStatus status = null;
-		Store store = null;
+		Store store = null; 
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
-			store = sRepository.findById(storeId).get();
-			if (loginMember.getAuthor() != 1 && loginMember.getMemberId() != store.getMember().getMemberId()) {
-				throw new RuntimeException();
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
 			}
-			store.setItems(newStore.getItems());
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
+			store = sRepository.findById(storeId).get();
+			
+			if (loginMember.getAuthor() != 1 && loginMember.getMemberId() != store.getMember().getMemberId()) {
+				throw new PermissionException();
+			}
+			
 			store.setMember(newStore.getMember());
-			store.setReviews(newStore.getReviews());
 			store.setStoreInfo(newStore.getStoreInfo());
 			store.setStoreName(newStore.getStoreName());
 			store.setStoreNum(newStore.getStoreNum());
 			sRepository.save(store);
 			status = HttpStatus.ACCEPTED;
-			
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -141,21 +170,28 @@ public class StoreController {
 
 	@DeleteMapping("/stores/{storeId}")
 	public ResponseEntity<Store> deleteStore(HttpServletRequest req, @PathVariable long storeId) {
-		log.info("---- updateEmployees () -----------------");
+		log.info("---- deleteStore () -----------------");
 		HttpStatus status = null;
 		Member loginMember = null;
 		Store store = null;
 		
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			loginMember = mRepository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
 			store = sRepository.findById(storeId).get();
+			
 			if (loginMember.getAuthor() > 0 || loginMember.getMemberId() == store.getMember().getMemberId()) {
 				sRepository.deleteById(storeId);
 				status = HttpStatus.ACCEPTED;
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
 		} catch(RuntimeException e) {
 			log.error("정보 조회 실패 ", e);

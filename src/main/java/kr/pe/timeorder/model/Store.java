@@ -30,20 +30,21 @@ public class Store {
 	private String storeName;
 	private String storeInfo;
 	private String storeNum;
-	@JsonBackReference
+	
+	@JsonBackReference("mStore")
 	@ManyToOne
 	private Member member;
-	@JsonBackReference
+
 	@ManyToOne
 	private Address address;
 	
-	@JsonManagedReference
+	@JsonManagedReference("sItem")
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Item> items = new ArrayList<Item>();
-	@JsonManagedReference
+	@JsonManagedReference("sReview")
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
-	@JsonManagedReference
+	@JsonManagedReference("sFile")
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<UploadFile> uploadFile;
 	

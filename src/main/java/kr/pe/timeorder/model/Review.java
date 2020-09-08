@@ -29,13 +29,13 @@ public class Review {
 	@Temporal(TemporalType.DATE)
 	private Date writeday;
 	
-	@JsonBackReference
+	@JsonBackReference("mReview")
 	@ManyToOne
 	private Member member;
-	@JsonBackReference
+	@JsonBackReference("sReview")
 	@ManyToOne
 	private Store store;
-	@JsonManagedReference
+	@JsonManagedReference("rFile")
 	@OneToOne(mappedBy = "member")
 	private UploadFile uploadFile;
 	

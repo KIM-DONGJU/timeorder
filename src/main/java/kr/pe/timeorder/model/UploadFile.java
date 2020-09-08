@@ -20,28 +20,28 @@ public class UploadFile {
 	@GeneratedValue
 	private long id;
 	private String fileName;
-	private String fileDownloadUri;
+	private String fileUri;
 	private String fileType;
 	private long fileSize;
-	@JsonBackReference
+	@JsonBackReference("sFile")
 	@ManyToOne
 	private Store store;
-	@JsonBackReference
+	@JsonBackReference("iFile")
 	@OneToOne
 	private Item item;
-	@JsonBackReference
+	@JsonBackReference("mFile")
 	@OneToOne
 	private Member member;
-	@JsonBackReference
+	@JsonBackReference("rFile")
 	@OneToOne
 	private Review review;
 
 	@Builder
-	public UploadFile(String fileName, String fileDownloadUri, String fileType, long fileSize, Store store, Item item,
+	public UploadFile(String fileName, String fileUri, String fileType, long fileSize, Store store, Item item,
 			Member member, Review review) {
 		super();
 		this.fileName = fileName;
-		this.fileDownloadUri = fileDownloadUri;
+		this.fileUri = fileUri;
 		this.fileType = fileType;
 		this.fileSize = fileSize;
 		this.store = store;
@@ -54,8 +54,8 @@ public class UploadFile {
 		this.fileName = fileName;
 	}
 
-	public void setFileDownloadUri(String fileDownloadUri) {
-		this.fileDownloadUri = fileDownloadUri;
+	public void setFileDownloadUri(String fileUri) {
+		this.fileUri = fileUri;
 	}
 
 	public void setFileType(String fileType) {

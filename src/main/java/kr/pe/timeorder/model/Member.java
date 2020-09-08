@@ -38,17 +38,17 @@ public class Member {
 	private String name;
 
 	private int author;
-	@JsonBackReference
+
 	@ManyToOne
 	private Address address;
 	
-	@JsonManagedReference
+	@JsonManagedReference("mStore")
 	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
 	private List<Store> stores = new ArrayList<Store>();
-	@JsonManagedReference
+	@JsonManagedReference("mReview")
 	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
-	@JsonManagedReference
+	@JsonManagedReference("mFile")
 	@OneToOne(mappedBy = "member")
 	private UploadFile uploadFile;
 	

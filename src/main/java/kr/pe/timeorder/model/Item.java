@@ -28,10 +28,11 @@ public class Item {
 	private int afterPrice;
 	private String itemInfo;
 	private int itemCount;
-	@JsonBackReference
+	
+	@JsonBackReference("sItem")
 	@ManyToOne
 	private Store store;
-	@JsonManagedReference
+	@JsonManagedReference("iFile")
 	@OneToOne(mappedBy = "item")
 	private UploadFile uploadFile;
 

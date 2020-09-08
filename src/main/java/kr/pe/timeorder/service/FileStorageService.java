@@ -52,19 +52,4 @@ public class FileStorageService {
 		}
 	}
 
-	public Resource loadFileAsResource(String fileName) {
-		try {
-			Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
-			Resource resource = new UrlResource(filePath.toUri());
-
-			if (resource.exists()) {
-				return resource;
-			} else {
-				throw new FileNotFoundException("File not found : " + fileName);
-			}
-		} catch (MalformedURLException e) {
-			throw new FileNotFoundException("File not found : " + fileName, e);
-		}
-	}
-
 }

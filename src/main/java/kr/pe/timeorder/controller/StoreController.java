@@ -22,6 +22,7 @@ import kr.pe.timeorder.exception.PermissionException;
 import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Store;
+import kr.pe.timeorder.repository.AddressRepository;
 import kr.pe.timeorder.repository.MemberRepository;
 import kr.pe.timeorder.repository.StoreRepository;
 import kr.pe.timeorder.service.JwtService;
@@ -35,6 +36,9 @@ public class StoreController {
 	
 	@Autowired
 	private MemberRepository mRepository;
+	
+	@Autowired
+	private AddressRepository aRepositoty;
 
 	@Autowired
 	private JwtService jwtService;
@@ -121,6 +125,9 @@ public class StoreController {
 				throw new InvalidException();
 			}
 			
+			if (newStore.getAddress() != null && aRepositoty.findById(newStore.getAddress().getId()).get() == null) {
+				aRepositoty.save(newStore.getAddress());
+			}
 			sRepository.save(newStore);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
@@ -159,6 +166,10 @@ public class StoreController {
 			store.setStoreInfo(newStore.getStoreInfo());
 			store.setStoreName(newStore.getStoreName());
 			store.setStoreNum(newStore.getStoreNum());
+			if (newStore.getAddress() != null && aRepositoty.findById(newStore.getAddress().getId()).get() == null) {
+				aRepositoty.save(newStore.getAddress());
+			}
+			store.setAddress(newStore.getAddress());
 			sRepository.save(store);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {

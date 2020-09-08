@@ -80,7 +80,7 @@ public class Item {
 	}
 
 	public void setItemName(String itemName) {
-		if (this.itemName != null && Pattern.matches(RegularExpression.storeItemName, this.itemName)) {
+		if (this.itemName != null && Pattern.matches(RegularExpression.storeItemName, itemName)) {
 			this.itemName = itemName;
 		}
 	}

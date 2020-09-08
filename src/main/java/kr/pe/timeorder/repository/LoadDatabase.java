@@ -19,9 +19,8 @@ public class LoadDatabase {
 	@Bean
 	CommandLineRunner initDatabase(MemberRepository repository) {
 		return args -> {
-			log.info("Preloading " + repository.save(Member.builder().phone("12345").author(0).name("이름").pw("1234").build()));
-			log.info("Preloading " + repository.save(Member.builder().phone("0000").author(2).name("이름이름").pw("1234").build()));
-			
+			log.info("Preloading " + repository.save(Member.builder().phone("01011112222").author(0).name("이름").pw("zxasqw12!@").build()));
+			log.info("Preloading " + repository.save(Member.builder().phone("01000001111").author(2).name("이름이름").pw("zxasqw12!@").build()));
 		};
 	}
 	

@@ -32,13 +32,16 @@ public class Store {
 
 	@ManyToOne
 	private Member member;
+	@ManyToOne
+	private Address address;
+	
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Item> items = new ArrayList<Item>();
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
 
 	@Builder
-	public Store(String storeName, String storeInfo, String storeNum, Member member) {
+	public Store(String storeName, String storeInfo, String storeNum, Member member, Address address) {
 		super();
 		this.storeName = storeName;
 		this.storeInfo = storeInfo;
@@ -53,6 +56,8 @@ public class Store {
 		if (member != null) {
 			member.getStores().add(this);
 		}
+		
+		this.address = address;
 	}
 
 	public boolean isVaild() {
@@ -60,7 +65,7 @@ public class Store {
 			return false;
 		}
 
-		if (this.storeInfo == null || this.storeInfo.length() == 0) {
+		if (this.storeInfo == null) {
 			return false;
 		}
 
@@ -76,13 +81,13 @@ public class Store {
 	}
 
 	public void setStoreName(String storeName) {
-		if (storeName != null && Pattern.matches(RegularExpression.storeItemName, this.storeName)) {
+		if (storeName != null && Pattern.matches(RegularExpression.storeItemName, storeName)) {
 			this.storeName = storeName;
 		}
 	}
 
 	public void setStoreInfo(String storeInfo) {
-		if (storeInfo != null && storeInfo.length() > 0) {
+		if (storeInfo != null) {
 			this.storeInfo = storeInfo;
 		}
 	}
@@ -102,6 +107,12 @@ public class Store {
 
 		if (member != null) {
 			member.getStores().add(this);
+		}
+	}
+	
+	public void setAddress(Address address) {
+		if (address != null) {
+			this.address = address;
 		}
 	}
 }

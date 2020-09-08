@@ -11,15 +11,16 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import kr.pe.timeorder.expression.RegularExpression;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 public class Store {
 	@Id
@@ -29,17 +30,23 @@ public class Store {
 	private String storeName;
 	private String storeInfo;
 	private String storeNum;
-
+	@JsonBackReference
 	@ManyToOne
 	private Member member;
+	@JsonBackReference
 	@ManyToOne
 	private Address address;
 	
+	@JsonManagedReference
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Item> items = new ArrayList<Item>();
+	@JsonManagedReference
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
-
+	@JsonManagedReference
+	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
+	private List<UploadFile> uploadFile;
+	
 	@Builder
 	public Store(String storeName, String storeInfo, String storeNum, Member member, Address address) {
 		super();

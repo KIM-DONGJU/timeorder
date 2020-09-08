@@ -1,26 +1,24 @@
 package kr.pe.timeorder.model;
 
 import java.util.Date;
-import java.util.List;
-import java.util.regex.Pattern;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
-import kr.pe.timeorder.expression.RegularExpression;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 public class Review {
 	@Id
@@ -30,12 +28,17 @@ public class Review {
 	private int score;
 	@Temporal(TemporalType.DATE)
 	private Date writeday;
-
+	
+	@JsonBackReference
 	@ManyToOne
 	private Member member;
+	@JsonBackReference
 	@ManyToOne
 	private Store store;
-
+	@JsonManagedReference
+	@OneToOne(mappedBy = "member")
+	private UploadFile uploadFile;
+	
 	@Builder
 	public Review(String contents, int score, Member member, Store store) {
 		super();
@@ -121,6 +124,12 @@ public class Review {
 
 		if (store != null) {
 			store.getReviews().add(this);
+		}
+	}
+	
+	public void setUploadFile(UploadFile uploadFile) {
+		if (uploadFile != null) {
+			this.uploadFile = uploadFile;
 		}
 	}
 

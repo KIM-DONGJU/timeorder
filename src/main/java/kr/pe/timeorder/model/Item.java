@@ -6,17 +6,18 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import kr.pe.timeorder.expression.RegularExpression;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 public class Item {
 	@Id
@@ -27,9 +28,12 @@ public class Item {
 	private int afterPrice;
 	private String itemInfo;
 	private int itemCount;
-
+	@JsonBackReference
 	@ManyToOne
 	private Store store;
+	@JsonManagedReference
+	@OneToOne(mappedBy = "item")
+	private UploadFile uploadFile;
 
 	@Builder
 	public Item(String itemName, int beforePrice, int afterPrice, String itemInfo, int itemCount, Store store) {
@@ -118,6 +122,12 @@ public class Item {
 
 		if (store != null) {
 			store.getItems().add(this);
+		}
+	}
+	
+	public void setUploadFile(UploadFile uploadFile) {
+		if (uploadFile != null) {
+			this.uploadFile = uploadFile;
 		}
 	}
 }

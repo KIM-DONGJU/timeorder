@@ -11,17 +11,18 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import kr.pe.timeorder.expression.RegularExpression;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 public class Member {
 	@Id
@@ -37,15 +38,20 @@ public class Member {
 	private String name;
 
 	private int author;
-
+	@JsonBackReference
 	@ManyToOne
 	private Address address;
-
+	
+	@JsonManagedReference
 	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
 	private List<Store> stores = new ArrayList<Store>();
+	@JsonManagedReference
 	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
-
+	@JsonManagedReference
+	@OneToOne(mappedBy = "member")
+	private UploadFile uploadFile;
+	
 	@Builder
 	public Member(String phone, String pw, String name, int author, Address address) {
 		super();
@@ -103,6 +109,12 @@ public class Member {
 	public void setAddress(Address address) {
 		if (address != null) {
 			this.address = address;
+		}
+	}
+	
+	public void setUploadFile(UploadFile uploadFile) {
+		if (uploadFile != null) {
+			this.uploadFile = uploadFile;
 		}
 	}
 

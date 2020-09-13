@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import kr.pe.timeorder.exception.InvalidException;
@@ -40,15 +42,41 @@ public class ItemController {
 	@Autowired
 	private JwtService jwtService;
 
+
 	@GetMapping("/items")
 	public List<Item> all() {
-		return iRepository.findAll();
+		return iRepository.findItemAll();
+	}
+
+	@GetMapping("/items-price")
+	public List<Item> allByPrice() {
+		return iRepository.findItemByPrice();
 	}
 	
-	@GetMapping("/items/{storeId}")
-	public List<Item> storeItems(@PathVariable long storeId) {
-		log.info("---- storeItems (id) -----------------");
-		return iRepository.findItemByStore(sRepository.findById(storeId).get());
+	@GetMapping("/items-score")
+	public List<Item> allByScore() {
+		return iRepository.findItemByScore();
+	}
+	
+	@GetMapping("/items-percent")
+	public List<Item> allByPercent() {
+		return iRepository.findItemByPercent();
+	}
+
+	@GetMapping("/items-price/{address}")
+	public List<Item> allByPriceAddress(@PathVariable String address) {
+		return iRepository.findItemByPriceAddress("%"+address+"%");
+	}
+
+	@GetMapping("/items-score/{address}")
+	public List<Item> allByScoreAddress(@PathVariable String address) {
+		System.out.println(address);
+		return iRepository.findItemByScoreAddress("%"+address+"%");
+	}
+	
+	@GetMapping("/items-percent/{address}")
+	public List<Item> allByPercentAddress(@PathVariable String address) {
+		return iRepository.findItemByPercentAddress("%"+address+"%");
 	}
 	
 	@GetMapping("/items/name/{itemName}")
@@ -57,7 +85,7 @@ public class ItemController {
 		return iRepository.findItemByItemNameContaining(itemName);
 	}
 
-	@PostMapping("/items/{storeId}")
+	@PostMapping("/items/store/{storeId}")
 	public ResponseEntity<Item> newItem(HttpServletRequest req, @RequestBody Item newItem, @PathVariable long storeId) {
 		log.info("---- newItem () -----------------");
 		HttpStatus status = null;
@@ -78,7 +106,7 @@ public class ItemController {
 			}
 			
 			newItem.setStore(store);
-
+			System.out.println(newItem);
 			if (!newItem.isVaild()) {
 				throw new InvalidException();
 			}
@@ -95,6 +123,36 @@ public class ItemController {
 	@GetMapping("/items/{itemId}")
 	public Item one(@PathVariable long itemId) {
 		return iRepository.findById(itemId).get();
+	}
+	
+	@PutMapping("/items/{itemId}")
+	public ResponseEntity<Item> replaceStore(HttpServletRequest req ,@RequestBody Item newItem, @PathVariable long itemId) {
+		HttpStatus status = null;
+		Item item = null; 
+		try {
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap)(jwtService.get(token).get("Member"));
+			
+			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
+					.orElseThrow(()-> new NotFoundException("member"));
+			item = iRepository.findById(itemId).orElseThrow(() -> new NotFoundException());
+
+			if (item.getStore().getMember().getMemberId() != loginMember.getMemberId()) {
+				throw new PermissionException();
+			}
+			
+			item.setItemCount(newItem.getItemCount());
+			iRepository.save(item);
+			status = HttpStatus.ACCEPTED;
+		} catch(RuntimeException e) {
+			log.error("정보 조회 실패 ", e);
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+		return new ResponseEntity<Item>(item, status);
 	}
 
 	@DeleteMapping("/items/{itemId}")

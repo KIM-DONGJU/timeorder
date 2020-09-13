@@ -23,7 +23,7 @@ public class TimeorderApplication implements WebMvcConfigurer {
 		System.out.println("addCorsMappings() --");
 		registry.addMapping("/**")
 		.allowedOrigins("*")
-		.allowedHeaders("*");
+		.allowedMethods("*");
 	}
 	
 	@Override

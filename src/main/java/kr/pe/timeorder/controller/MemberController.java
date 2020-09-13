@@ -23,7 +23,6 @@ import kr.pe.timeorder.exception.NotFoundException;
 import kr.pe.timeorder.exception.PermissionException;
 import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Member;
-import kr.pe.timeorder.repository.AddressRepository;
 import kr.pe.timeorder.repository.MemberRepository;
 import kr.pe.timeorder.service.JwtService;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MemberController {
 	@Autowired
 	private MemberRepository mRepository;
-	@Autowired
-	private AddressRepository aRepositoty;
 	@Autowired
 	private JwtService jwtService;
 
@@ -74,10 +71,6 @@ public class MemberController {
 	public ResponseEntity<Member> newMember(@RequestBody Member newMember) {
 		log.info("---- newMembers () -----------------");
 		if (newMember.isVaild()) {
-			if (newMember.getAddress() != null && aRepositoty.findById(newMember.getAddress().getId()).get() == null) {
-				aRepositoty.save(newMember.getAddress());
-			}
-
 			mRepository.save(newMember);
 			return new ResponseEntity<Member>(newMember, HttpStatus.ACCEPTED);
 		}
@@ -138,12 +131,6 @@ public class MemberController {
 				member.setPw(newMember.getPw());
 				member.setName(newMember.getName());
 				member.setAuthor(newMember.getAuthor());
-
-				if (newMember.getAddress() != null
-						&& aRepositoty.findById(newMember.getAddress().getId()).get() == null) {
-					aRepositoty.save(newMember.getAddress());
-				}
-				member.setAddress(newMember.getAddress());
 
 				mRepository.save(member);
 				status = HttpStatus.ACCEPTED;

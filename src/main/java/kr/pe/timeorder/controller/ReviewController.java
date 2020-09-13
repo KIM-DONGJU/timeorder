@@ -1,6 +1,5 @@
 package kr.pe.timeorder.controller;
 
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -21,9 +20,10 @@ import kr.pe.timeorder.exception.InvalidException;
 import kr.pe.timeorder.exception.NotFoundException;
 import kr.pe.timeorder.exception.PermissionException;
 import kr.pe.timeorder.exception.TokenException;
+import kr.pe.timeorder.model.BuyItem;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Review;
-import kr.pe.timeorder.model.Store;
+import kr.pe.timeorder.repository.BuyItemRepository;
 import kr.pe.timeorder.repository.MemberRepository;
 import kr.pe.timeorder.repository.ReviewRepository;
 import kr.pe.timeorder.repository.StoreRepository;
@@ -40,12 +40,14 @@ public class ReviewController {
 	@Autowired
 	private StoreRepository sRepository;
 	@Autowired
+	private BuyItemRepository bRepository;
+	@Autowired
 	private JwtService jwtService;
 
 	@GetMapping("/reviews")
 	public List<Review> allReviews() {
 		log.info("---- allReviews () -----------------");
-		return rRepository.findAll();
+		return rRepository.findAllByDate();
 	}
 	
 	@GetMapping("/reviews/{storeId}")
@@ -54,8 +56,8 @@ public class ReviewController {
 		return rRepository.findReviewByStore(sRepository.findById(storeId).get());
 	}
 	
-	@PostMapping("/reviews/{storeId}")
-	public ResponseEntity<Review> newReview(HttpServletRequest req, @RequestBody Review newReview, @PathVariable long storeId) {
+	@PostMapping("/reviews/{buyItemId}")
+	public ResponseEntity<Review> newReview(HttpServletRequest req, @RequestBody Review newReview, @PathVariable long buyItemId) {
 		log.info("---- newReview () -----------------");
 		HttpStatus status = null;
 		try {
@@ -69,14 +71,13 @@ public class ReviewController {
 			Member loginMember = mRepository.findMemberByPhone((String)l.get("phone"))
 					.orElseThrow(()-> new NotFoundException("member"));
 			
-			
-			newReview.setStore(sRepository.findById(storeId).get());
+			BuyItem buyItem = bRepository.findById(buyItemId).orElseThrow(() -> new NotFoundException());
+			buyItem.getStore().setScore(newReview.getScore());
+			sRepository.save(buyItem.getStore());
+			newReview.setBuyItem(buyItem);
 			newReview.setMember(loginMember);
-			
-			if (!newReview.isVaild()) {
-				throw new InvalidException();
-			}
-			
+			newReview.setStore(buyItem.getStore());
+			newReview.setWriteday();
 			rRepository.save(newReview);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
@@ -117,6 +118,7 @@ public class ReviewController {
 			review.setScore(newReview.getScore());
 			review.setStore(newReview.getStore());
 			review.setWriteday();
+			review.setBuyItem(newReview.getBuyItem());
 			rRepository.save(review);
 			status = HttpStatus.ACCEPTED;
 			

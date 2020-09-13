@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.hibernate.criterion.NotExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,10 @@ import kr.pe.timeorder.exception.InvalidException;
 import kr.pe.timeorder.exception.NotFoundException;
 import kr.pe.timeorder.exception.PermissionException;
 import kr.pe.timeorder.exception.TokenException;
+import kr.pe.timeorder.model.Item;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Store;
-import kr.pe.timeorder.repository.AddressRepository;
+import kr.pe.timeorder.repository.ItemRepository;
 import kr.pe.timeorder.repository.MemberRepository;
 import kr.pe.timeorder.repository.StoreRepository;
 import kr.pe.timeorder.service.JwtService;
@@ -38,8 +40,8 @@ public class StoreController {
 	private MemberRepository mRepository;
 	
 	@Autowired
-	private AddressRepository aRepositoty;
-
+	private ItemRepository iRepository;
+	
 	@Autowired
 	private JwtService jwtService;
 	
@@ -100,6 +102,23 @@ public class StoreController {
 		}
 		return new ResponseEntity<List<Store>>(list, status);
 	}
+	
+	@GetMapping("/stores/item/{itemid}")
+	public ResponseEntity<Store> itemStores(HttpServletRequest req, @PathVariable long itemid) {
+		HttpStatus status = null;
+		Item item = null;
+		try {
+			item = iRepository.findById(itemid).orElseThrow(() -> new NotFoundException());
+			if (item.getStore() == null) {
+				throw new NotFoundException();
+			}
+			status = HttpStatus.ACCEPTED;
+		} catch(RuntimeException e) {
+			log.error("정보 조회 실패 ", e);
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+		return new ResponseEntity<Store>(item.getStore(), status);
+	}
 
 	@PostMapping("/stores")
 	public ResponseEntity<Store> newStore(HttpServletRequest req, @RequestBody Store newStore) {
@@ -125,9 +144,6 @@ public class StoreController {
 				throw new InvalidException();
 			}
 			
-			if (newStore.getAddress() != null && aRepositoty.findById(newStore.getAddress().getId()).get() == null) {
-				aRepositoty.save(newStore.getAddress());
-			}
 			sRepository.save(newStore);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {
@@ -162,14 +178,13 @@ public class StoreController {
 				throw new PermissionException();
 			}
 			
-			store.setMember(newStore.getMember());
 			store.setStoreInfo(newStore.getStoreInfo());
 			store.setStoreName(newStore.getStoreName());
 			store.setStoreNum(newStore.getStoreNum());
-			if (newStore.getAddress() != null && aRepositoty.findById(newStore.getAddress().getId()).get() == null) {
-				aRepositoty.save(newStore.getAddress());
-			}
-			store.setAddress(newStore.getAddress());
+			store.setCloseTime(newStore.getCloseTime());
+			store.setOpenTime(newStore.getOpenTime());
+			store.setAddress_name(newStore.getAddress_name());
+			store.setDetail_address(newStore.getDetail_address());
 			sRepository.save(store);
 			status = HttpStatus.ACCEPTED;
 		} catch(RuntimeException e) {

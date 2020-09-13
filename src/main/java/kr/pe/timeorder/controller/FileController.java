@@ -1,18 +1,11 @@
 package kr.pe.timeorder.controller;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +15,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import kr.pe.timeorder.exception.NotFoundException;
 import kr.pe.timeorder.model.Item;
-import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.model.Review;
 import kr.pe.timeorder.model.Store;
 import kr.pe.timeorder.model.UploadFile;
@@ -55,31 +47,9 @@ public class FileController {
 	@Autowired
 	private FileStorageService fileService;
 
-	@PostMapping("/upload/member/{id}")
-	public ResponseEntity<UploadFile> uploadMemberFile(@PathVariable long id,
-			@RequestParam("file") MultipartFile file) {
-		UploadFile uploadFile = null;
-		HttpStatus status = null;
-		try {
-			String fileName = fileService.storeFile(file);
-			String fileUri = ServletUriComponentsBuilder.fromCurrentContextPath().path("/img/")
-					.path(fileName).toUriString();
-			uploadFile = UploadFile.builder().fileName(fileName).fileUri(fileUri)
-					.fileType(file.getContentType()).fileSize(file.getSize()).build();
-			Member member = mRepository.findById(id).orElseThrow(() -> new NotFoundException());
-			uploadFile.setMember(member);
-			fRepository.save(uploadFile);
-			status = HttpStatus.ACCEPTED;
-		} catch (RuntimeException e) {
-			log.error("uploadMemberFile error", e);
-			status = HttpStatus.INTERNAL_SERVER_ERROR;
-		}
-
-		return new ResponseEntity<UploadFile>(uploadFile, status);
-	}
-
 	@PostMapping("/upload/item/{id}")
 	public ResponseEntity<UploadFile> uploadItemFile(@PathVariable long id, @RequestParam("file") MultipartFile file) {
+		log.info("upload item file");
 		UploadFile uploadFile = null;
 		HttpStatus status = null;
 		try {
@@ -125,7 +95,7 @@ public class FileController {
 
 	@PostMapping("/upload/store/{id}")
 	public ResponseEntity<List<UploadFile>> uploadStoreFile(@PathVariable long id,
-			@RequestParam("files") MultipartFile[] files) {
+			@RequestParam("file") MultipartFile file) {
 		UploadFile uploadFile = null;
 		HttpStatus status = null;
 		List<UploadFile> list = new ArrayList();
@@ -133,7 +103,7 @@ public class FileController {
 		String fileUri = null;
 		try {
 			Store store = sRepository.findById(id).orElseThrow(() -> new NotFoundException());
-			for (MultipartFile file : files) {
+			
 				fileName = fileService.storeFile(file);
 				fileUri = ServletUriComponentsBuilder.fromCurrentContextPath().path("/img/")
 						.path(fileName).toUriString();
@@ -142,7 +112,7 @@ public class FileController {
 				uploadFile.setStore(store);
 				fRepository.save(uploadFile);
 				list.add(uploadFile);
-			}
+			
 			status = HttpStatus.ACCEPTED;
 		} catch (RuntimeException e) {
 			log.error("uploadMemberFile error", e);

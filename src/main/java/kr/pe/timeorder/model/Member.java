@@ -13,15 +13,16 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import kr.pe.timeorder.expression.RegularExpression;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Getter
+@ToString
 @NoArgsConstructor
 @Entity
 public class Member {
@@ -38,28 +39,24 @@ public class Member {
 	private String name;
 
 	private int author;
-
-	@ManyToOne
-	private Address address;
 	
 	@JsonManagedReference("mStore")
-	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
-	private List<Store> stores = new ArrayList<Store>();
+	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
+	private Store store;
 	@JsonManagedReference("mReview")
 	@OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
 	private List<Review> reviews = new ArrayList<Review>();
-	@JsonManagedReference("mFile")
-	@OneToOne(mappedBy = "member")
-	private UploadFile uploadFile;
+	@JsonManagedReference("mBuyItem")
+	@OneToMany(mappedBy = "member")
+	private List<BuyItem> buyItem = new ArrayList<BuyItem>();
 	
 	@Builder
-	public Member(String phone, String pw, String name, int author, Address address) {
+	public Member(String phone, String pw, String name, int author) {
 		super();
 		this.phone = phone;
 		this.pw = pw;
 		this.name = name;
 		this.author = author;
-		this.address = address;
 	}
 
 	public boolean isVaild() {
@@ -106,16 +103,7 @@ public class Member {
 		}
 	}
 
-	public void setAddress(Address address) {
-		if (address != null) {
-			this.address = address;
-		}
+	public void setStore(Store store) {
+			this.store = store;
 	}
-	
-	public void setUploadFile(UploadFile uploadFile) {
-		if (uploadFile != null) {
-			this.uploadFile = uploadFile;
-		}
-	}
-
 }

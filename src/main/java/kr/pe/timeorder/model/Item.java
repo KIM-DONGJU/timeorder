@@ -2,6 +2,7 @@ package kr.pe.timeorder.model;
 
 import java.util.regex.Pattern;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -15,8 +16,10 @@ import kr.pe.timeorder.expression.RegularExpression;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Getter
+@ToString
 @NoArgsConstructor
 @Entity
 public class Item {
@@ -33,9 +36,9 @@ public class Item {
 	@ManyToOne
 	private Store store;
 	@JsonManagedReference("iFile")
-	@OneToOne(mappedBy = "item")
+	@OneToOne(cascade = CascadeType.ALL, mappedBy = "item")
 	private UploadFile uploadFile;
-
+ 
 	@Builder
 	public Item(String itemName, int beforePrice, int afterPrice, String itemInfo, int itemCount, Store store) {
 		super();
@@ -58,14 +61,12 @@ public class Item {
 
 	public boolean isVaild() {
 		if (this.beforePrice <= 0 || this.afterPrice <= 0) {
+			System.out.println("1");
 			return false;
 		}
 
-		if (this.beforePrice > this.afterPrice) {
-			return false;
-		}
-
-		if (this.itemInfo == null || this.itemInfo.length() == 0) {
+		if (this.afterPrice > this.beforePrice) {
+			System.out.println("2");
 			return false;
 		}
 
@@ -74,10 +75,12 @@ public class Item {
 		}
 
 		if (this.itemCount < 0) {
+			System.out.println("5");
 			return false;
 		}
 
 		if (this.store == null) {
+			System.out.println("6");
 			return false;
 		}
 
@@ -85,7 +88,7 @@ public class Item {
 	}
 
 	public void setItemName(String itemName) {
-		if (this.itemName != null && Pattern.matches(RegularExpression.storeItemName, itemName)) {
+		if (itemName != null && Pattern.matches(RegularExpression.storeItemName, itemName)) {
 			this.itemName = itemName;
 		}
 	}
@@ -103,7 +106,7 @@ public class Item {
 	}
 
 	public void setItemInfo(String itemInfo) {
-		if (this.itemInfo != null && this.itemInfo.length() > 0) {
+		if (itemInfo != null) {
 			this.itemInfo = itemInfo;
 		}
 	}

@@ -8,8 +8,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -30,14 +30,18 @@ public class Store {
 	private String storeName;
 	private String storeInfo;
 	private String storeNum;
-	
+	private int openTime;
+	private int closeTime;
+	private int score = 0; 
+	private int scoreCnt = 0;
+	private double x;
+	private double y;
+	private String address_name;
+	private String detail_address;
 	@JsonBackReference("mStore")
-	@ManyToOne
+	@OneToOne
 	private Member member;
 
-	@ManyToOne
-	private Address address;
-	
 	@JsonManagedReference("sItem")
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<Item> items = new ArrayList<Item>();
@@ -47,33 +51,33 @@ public class Store {
 	@JsonManagedReference("sFile")
 	@OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
 	private List<UploadFile> uploadFile;
+	@JsonManagedReference("sBuyItem")
+	@OneToMany(mappedBy = "store")
+	private List<BuyItem> buyItem = new ArrayList<>();
 	
 	@Builder
-	public Store(String storeName, String storeInfo, String storeNum, Member member, Address address) {
+	public Store(String storeName, int openTime, int closeTime, String storeInfo, String storeNum, double x, double y, String address_name, String detail_address, Member member) {
 		super();
 		this.storeName = storeName;
 		this.storeInfo = storeInfo;
 		this.storeNum = storeNum;
-
-		if (this.member != null) {
-			this.member.getStores().remove(this);
-		}
-
+		this.openTime = openTime;
+		this.closeTime = closeTime;
+		this.x = x;
+		this.y = y;
+		this.address_name = address_name;
+		this.detail_address = detail_address;
+		
 		this.member = member;
-
 		if (member != null) {
-			member.getStores().add(this);
+			member.setStore(this);
 		}
 		
-		this.address = address;
 	}
 
+	
 	public boolean isVaild() {
 		if (this.storeNum == null || !Pattern.matches(RegularExpression.phoneNum, this.storeNum)) {
-			return false;
-		}
-
-		if (this.storeInfo == null) {
 			return false;
 		}
 
@@ -82,6 +86,14 @@ public class Store {
 		}
 
 		if (this.member == null) {
+			return false;
+		}
+		
+		if (this.closeTime < 0 || this.closeTime > 24) {
+			return false;
+		}
+		
+		if (this.openTime < 0 || this.openTime > 24) {
 			return false;
 		}
 
@@ -107,20 +119,57 @@ public class Store {
 	}
 
 	public void setMember(Member member) {
-		if (this.member != null) {
-			this.member.getStores().remove(this);
-		}
-
 		this.member = member;
-
-		if (member != null) {
-			member.getStores().add(this);
+		if (this.member != null) {
+			this.member.setStore(this);
 		}
 	}
 	
-	public void setAddress(Address address) {
-		if (address != null) {
-			this.address = address;
+	public void setOpenTime(int openTime) {
+		if (openTime > 0 && openTime <= 24) {
+			this.openTime = openTime;
+		}
+	}
+
+	public void setCloseTime(int closeTime) {
+		if (closeTime > 0 && closeTime <= 24) {
+			this.scoreCnt++;
+			this.closeTime = closeTime;
+		}
+	}
+	
+	public void setScore(int score) {
+		if (score > 0 || score <= 5) {
+			this.score += score;
+			this.scoreCnt++;
+		}
+	}
+
+
+	public void setX(double x) {
+		if (x != 0.0) {
+			this.x = x;
+		}
+	}
+
+
+	public void setY(double y) {
+		if (y != 0.0) {
+		this.y = y;
+		}
+	}
+
+
+	public void setAddress_name(String address_name) {
+		if (address_name != null) {
+		this.address_name = address_name;
+		}
+	}
+
+
+	public void setDetail_address(String detail_address) {
+		if (detail_address != null) {
+			this.detail_address = detail_address;
 		}
 	}
 }

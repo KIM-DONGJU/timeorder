@@ -29,25 +29,29 @@ public class UploadFile {
 	@JsonBackReference("iFile")
 	@OneToOne
 	private Item item;
-	@JsonBackReference("mFile")
-	@OneToOne
-	private Member member;
 	@JsonBackReference("rFile")
 	@OneToOne
 	private Review review;
 
 	@Builder
-	public UploadFile(String fileName, String fileUri, String fileType, long fileSize, Store store, Item item,
-			Member member, Review review) {
+	public UploadFile(String fileName, String fileUri, String fileType, long fileSize, Store store, Item item, Review review) {
 		super();
 		this.fileName = fileName;
 		this.fileUri = fileUri;
 		this.fileType = fileType;
 		this.fileSize = fileSize;
 		this.store = store;
+		if (store != null) {
+			store.getUploadFile().add(this);
+		}
 		this.item = item;
-		this.member = member;
+		if (item != null) {
+			item.setUploadFile(this);
+		}
 		this.review = review;
+		if (review != null) {
+			review.setUploadFile(this);
+		}
 	}
 
 	public void setFileName(String fileName) {
@@ -64,20 +68,13 @@ public class UploadFile {
 
 	public void setSize(long fileSize) {
 		this.fileSize = fileSize;
-	}
+	} 
 
 	public void setItem(Item item) {
 		if (item != null) {
 			item.setUploadFile(this);
 		}
 		this.item = item;
-	}
-
-	public void setMember(Member member) {
-		if (member != null) {
-			member.setUploadFile(this);
-		}
-		this.member = member;
 	}
 
 	public void setReview(Review review) {

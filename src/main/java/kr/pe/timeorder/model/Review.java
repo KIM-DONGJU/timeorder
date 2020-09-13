@@ -36,34 +36,28 @@ public class Review {
 	@ManyToOne
 	private Store store;
 	@JsonManagedReference("rFile")
-	@OneToOne(mappedBy = "member")
+	@OneToOne(mappedBy = "review")
 	private UploadFile uploadFile;
-	
+	@JsonBackReference("bReview")
+	@OneToOne
+	private BuyItem buyItem;
 	@Builder
-	public Review(String contents, int score, Member member, Store store) {
+	public Review(String contents, int score, Member member, Store store, BuyItem buyItem) {
 		super();
 		this.contents = contents;
 		this.score = score;
 		this.writeday = new Date();
-
-		if (this.member != null) {
-			this.member.getReviews().remove(this);
-		}
-
 		this.member = member;
-
 		if (member != null) {
 			member.getReviews().add(this);
 		}
-
-		if (this.store != null) {
-			this.store.getReviews().remove(this);
-		}
-
 		this.store = store;
-
 		if (store != null) {
 			store.getReviews().add(this);
+		}
+		this.buyItem = buyItem;
+		if (buyItem != null) {
+			buyItem.setReivew(this);
 		}
 	}
 
@@ -88,9 +82,7 @@ public class Review {
 	}
 
 	public void setContents(String contents) {
-		if (this.contents != null && this.contents.length() > 0) {
-			this.contents = contents;
-		}
+		this.contents = contents;
 	}
 
 	public void setScore(int score) {
@@ -132,5 +124,13 @@ public class Review {
 			this.uploadFile = uploadFile;
 		}
 	}
+
+	public void setBuyItem(BuyItem buyItem) {
+		this.buyItem = buyItem;
+		if (buyItem != null) {
+			buyItem.setReivew(this);
+		}
+	}
+	
 
 }

@@ -50,7 +50,7 @@ public class ReviewController {
 		return rRepository.findAllByDate();
 	}
 	
-	@GetMapping("/reviews/{storeId}")
+	@GetMapping("/reviews/store/{storeId}")
 	public List<Review> storeReviews(@PathVariable long storeId) {
 		log.info("---- storeReviews () -----------------");
 		return rRepository.findReviewByStore(sRepository.findById(storeId).get());
@@ -72,7 +72,7 @@ public class ReviewController {
 					.orElseThrow(()-> new NotFoundException("member"));
 			
 			BuyItem buyItem = bRepository.findById(buyItemId).orElseThrow(() -> new NotFoundException());
-			buyItem.getStore().setScore(newReview.getScore());
+			buyItem.getStore().addScore(newReview.getScore());
 			sRepository.save(buyItem.getStore());
 			newReview.setBuyItem(buyItem);
 			newReview.setMember(loginMember);

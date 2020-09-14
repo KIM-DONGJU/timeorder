@@ -133,19 +133,23 @@ public class Store {
 
 	public void setCloseTime(int closeTime) {
 		if (closeTime > 0 && closeTime <= 24) {
-			this.scoreCnt++;
 			this.closeTime = closeTime;
 		}
 	}
 	
 	public void setScore(int score) {
 		if (score > 0 || score <= 5) {
+			this.score = score;
+		}
+	}
+	
+	public void addScore(int score) {
+		if (score > 0 || score <= 5) {
 			this.score += score;
 			this.scoreCnt++;
 		}
 	}
-
-
+	
 	public void setX(double x) {
 		if (x != 0.0) {
 			this.x = x;

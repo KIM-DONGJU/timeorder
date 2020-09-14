@@ -26,7 +26,7 @@ public class Review {
 	private long reviewId;
 	private String contents;
 	private int score;
-	@Temporal(TemporalType.DATE)
+	
 	private Date writeday;
 	
 	@JsonBackReference("mReview")

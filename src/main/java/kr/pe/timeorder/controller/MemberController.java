@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import kr.pe.timeorder.exception.NotFoundException;
+import kr.pe.timeorder.exception.PermissionException;
+import kr.pe.timeorder.exception.TokenException;
 import kr.pe.timeorder.model.Member;
 import kr.pe.timeorder.repository.MemberRepository;
 import kr.pe.timeorder.service.JwtService;
@@ -28,151 +31,185 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 public class MemberController {
 	@Autowired
-	private MemberRepository repository;
-	
+	private MemberRepository mRepository;
 	@Autowired
 	private JwtService jwtService;
-	
-	//전체 멤버
-	//관리자만 가능
+
+	// 전체 멤버
+	// 관리자만 가능
 	@GetMapping("/members")
-	public ResponseEntity<List<Member>> all(HttpServletRequest req) {
+	public ResponseEntity<List<Member>> allMembers(HttpServletRequest req) {
+		log.info("---- allMembers () -----------------");
 		HttpStatus status = null;
 		Member member = null;
 		List<Member> list = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			member = repository.findMemberByPhone((String)l.get("phone"));
-			if (member.getAuthor() != 2) {
-				throw new RuntimeException();
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
 			}
-			System.out.println(member);
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap) (jwtService.get(token).get("Member"));
+
+			member = mRepository.findMemberByPhone((String) l.get("phone"))
+					.orElseThrow(() -> new NotFoundException("member"));
+
+			if (member.getAuthor() != 2) {
+				throw new PermissionException();
+			}
+			list = mRepository.findAll();
 			status = HttpStatus.ACCEPTED;
-			list = repository.findAll();
-		} catch(RuntimeException e) {
+		} catch (RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
 		return new ResponseEntity<List<Member>>(list, status);
 	}
-	
-	//멤버 추가
+
+	// 멤버 추가
 	@PostMapping("/members")
-	public Member newMember(@RequestBody Member newMember) {
-		return repository.save(newMember);
+	public ResponseEntity<Member> newMember(@RequestBody Member newMember) {
+		log.info("---- newMembers () -----------------");
+		if (newMember.isVaild()) {
+			mRepository.save(newMember);
+			return new ResponseEntity<Member>(newMember, HttpStatus.ACCEPTED);
+		}
+		return new ResponseEntity<Member>(newMember, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
-	
-	//memberId와 일치하는 멤버 가져오기
-	//memberId로 로그인한 계정과 관리자만 가능
+
+	// memberId와 일치하는 멤버 가져오기
+	// memberId로 로그인한 계정과 관리자만 가능
 	@GetMapping("/members/{memberId}")
-	public ResponseEntity<Member> one(@PathVariable long memberId, HttpServletRequest req) {
+	public ResponseEntity<Member> oneMember(@PathVariable long memberId, HttpServletRequest req) {
+		log.info("---- oneMember () -----------------");
 		HttpStatus status = null;
 		Member member = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			member = repository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap) (jwtService.get(token).get("Member"));
+
+			member = mRepository.findMemberByPhone((String) l.get("phone"))
+					.orElseThrow(() -> new NotFoundException("member"));
 			if (member.getAuthor() == 2 || member.getMemberId() == memberId) {
 				status = HttpStatus.ACCEPTED;
-				System.out.println(member);
 			} else {
 				member = null;
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
-		} catch(RuntimeException e) {
+		} catch (RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
 		return new ResponseEntity<Member>(member, status);
 	}
-	
-	//멤버수정
-	//관리자하고 memberId로그인한 계정만 가능
+
+	// 멤버수정
+	// 관리자하고 memberId로그인한 계정만 가능
 	@PutMapping("/members/{memberId}")
-	public ResponseEntity<Member> replaceMember(HttpServletRequest req, @RequestBody Member newMember, @PathVariable long memberId) {
+	public ResponseEntity<Member> replaceMember(HttpServletRequest req, @RequestBody Member newMember,
+			@PathVariable long memberId) {
+		log.info("---- replaceMember () -----------------");
 		HttpStatus status = null;
 		Member member = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			member = repository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap) (jwtService.get(token).get("Member"));
+
+			member = mRepository.findMemberByPhone((String) l.get("phone"))
+					.orElseThrow(() -> new NotFoundException("member"));
+
 			if (member.getAuthor() == 2 || member.getMemberId() == memberId) {
 				member.setPhone(newMember.getPhone());
 				member.setPw(newMember.getPw());
 				member.setName(newMember.getName());
-				member.setStores(newMember.getStores());
 				member.setAuthor(newMember.getAuthor());
-				member.setReviews(newMember.getReviews());
-				repository.save(member);
+
+				mRepository.save(member);
 				status = HttpStatus.ACCEPTED;
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
-		} catch(RuntimeException e) {
+		} catch (RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
 		return new ResponseEntity<Member>(member, status);
 	}
-	
-	//member 삭제
-	//본인 , 관리자만 가능
+
+	// member 삭제
+	// 본인 , 관리자만 가능
 	@DeleteMapping("/members/{memberId}")
 	public ResponseEntity<Member> deleteMember(HttpServletRequest req, @PathVariable long memberId) {
-		log.info("---- updateEmployees () -----------------");
+		log.info("---- deleteMember () -----------------");
 		HttpStatus status = null;
 		Member member = null;
 		try {
-			jwtService.checkValid(req.getHeader("jwt-auth-token"));
-			LinkedHashMap l = (LinkedHashMap)(jwtService.get(req.getHeader("jwt-auth-token")).get("Member"));
-			member = repository.findMemberByPhone((String)l.get("phone"));
+			String token = req.getHeader("jwt-auth-token");
+			if (token == null || token.length() == 0) {
+				throw new TokenException();
+			}
+			jwtService.checkValid(token);
+			LinkedHashMap l = (LinkedHashMap) (jwtService.get(token).get("Member"));
+
+			member = mRepository.findMemberByPhone((String) l.get("phone"))
+					.orElseThrow(() -> new NotFoundException("member"));
 			if (member.getAuthor() == 2 || member.getMemberId() == memberId) {
-				repository.deleteById(memberId);
+				mRepository.deleteById(memberId);
 				status = HttpStatus.ACCEPTED;
 			} else {
-				throw new RuntimeException();
+				throw new PermissionException();
 			}
-		} catch(RuntimeException e) {
+		} catch (RuntimeException e) {
 			log.error("정보 조회 실패 ", e);
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
 		return new ResponseEntity<Member>(member, status);
 	}
-	
+
 	@PostMapping("/members/signin")
-	public ResponseEntity<Map<String, Object>> signin(@RequestBody Member user, HttpServletResponse res){
-		System.out.println("signin");
-		log.info("--- 로그인 버튼 클릭시에 실행되는 메소드 ---");
-		System.out.println(user);
+	public ResponseEntity<Map<String, Object>> signin(@RequestBody Member user, HttpServletResponse res) {
+		log.info("--- signin () ---");
 		Map<String, Object> resultMap = new HashMap<>();
 		HttpStatus status = null;
-		
+
 		try {
-			Member loginMember = repository.findMemberByPhoneAndPw(user.getPhone(), user.getPw());
+			if (user.getPhone().length() == 0 || user.getPw().length() == 0) {
+				throw new RuntimeException();
+			}
+
+			Member loginMember = mRepository.findMemberByPhoneAndPw(user.getPhone(), user.getPw())
+					.orElseThrow(() -> new NotFoundException("member"));
 			System.out.println(loginMember);
-			//로그인 성공시 토큰 생성
+			// 로그인 성공시 토큰 생성
 			String token = jwtService.create(loginMember);
-			
-			//토큰 정보는 response의 헤더로 보내고 나머지는 map에 담아두기
+
+			// 토큰 정보는 response의 헤더로 보내고 나머지는 map에 담아두기
 			res.setHeader("jwt-auth-token", token);
-			
+
 			System.out.println("생성된 token -- " + token);
-			
+
 			resultMap.put("auth_token", token);
 			resultMap.put("status", true);
 			resultMap.put("data", loginMember);
 			status = HttpStatus.ACCEPTED;
-		
-		}catch(RuntimeException e) {
+
+		} catch (RuntimeException e) {
 			log.error("로그인 실패", e);
 			resultMap.put("message", e.getMessage());
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
-		
+
 		log.info("**************************" + resultMap);
-		
-		//리턴시 map과 상태 메세지를 함께 전송
+
+		// 리턴시 map과 상태 메세지를 함께 전송
 		return new ResponseEntity<Map<String, Object>>(resultMap, status);
 	}
 
